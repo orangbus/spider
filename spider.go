@@ -110,3 +110,11 @@ func (s *Spider) Detail(ids string) (movie_spider.MovieResponse, error) {
 func (s *Spider) Ping() bool {
 	return true
 }
+
+func (s *Spider) Parse() *Parse {
+	return NewParse()
+}
+
+func (s *Spider) Download() *Download {
+	return NewDownload()
+}

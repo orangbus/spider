@@ -1,24 +1,23 @@
 package test
 
 import (
-	spider "github.com/orangbus/spider"
+	"github.com/orangbus/spider/bootstrap"
+	"github.com/orangbus/spider/facades"
 	"log"
 	"testing"
 )
 
-var client *spider.Spider
-
 func init() {
-	client = spider.NewSpider()
+	bootstrap.Boot()
 }
 
 func TestPing(t *testing.T) {
-	status := client.BaseUrl("https://www.msnii.com/api/json.php").Ping()
+	status := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Ping()
 	t.Log(status)
 }
 
 func TestGetCate(t *testing.T) {
-	list, err := client.BaseUrl("https://www.hongniuzy2.com/api.php/provide/vod").GetCateList()
+	list, err := facades.Spider().BaseUrl("https://www.hongniuzy2.com/api.php/provide/vod").GetCateList()
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return
@@ -27,7 +26,7 @@ func TestGetCate(t *testing.T) {
 }
 
 func TestGetList(t *testing.T) {
-	res, err := client.BaseUrl("https://www.msnii.com/api/json.php").GetList(1)
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").GetList(1)
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return
@@ -40,7 +39,7 @@ func TestGetList(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	res, err := client.BaseUrl("https://www.msnii.com/api/json.php").Search("斗罗", 1)
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Search("斗罗", 1)
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return
@@ -51,7 +50,7 @@ func TestSearch(t *testing.T) {
 }
 
 func TestDetail(t *testing.T) {
-	res, err := client.BaseUrl("https://www.msnii.com/api/json.php").Detail("1")
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Detail("1")
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return

@@ -15,4 +15,10 @@ type Spider interface {
 	Search(keyword string, page int, limit ...int) (movie_spider.MovieResponse, error)
 	Detail(ids string) (movie_spider.MovieResponse, error)
 	Ping() bool
+
+	// 解析
+	Parse() *spider.Parse
+
+	// 下载
+	Download() *spider.Download
 }
