@@ -30,9 +30,7 @@ func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
 	}
 	ch := make(chan dl.Progress, 30)
 	go func() {
-		defer close(ch)
-
-		err = task.Start(d.thread, ch)
+		err = task.Start(name, d.thread, ch)
 		if err != nil {
 			log.Printf("下载错误：%s", err.Error())
 		}

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"github.com/orangbus/spider/pkg/downloader/parse"
 	"github.com/orangbus/spider/pkg/downloader/tool"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -40,7 +41,6 @@ type Progress struct {
 	Finish int32 `json:"finish"`
 	Total  int   `json:"total"`
 	Stop   bool  `json:"stop"`
-	Status int   `json:"status"`
 }
 
 // NewTask returns a Task instance
@@ -85,13 +85,12 @@ func (d *Downloader) GetFinish() (total int32) {
 	return d.finish
 }
 
-func (d *Downloader) Start(concurrency int, p chan Progress) error {
+func (d *Downloader) Start(name string, concurrency int, p chan Progress) error {
 	var progress Progress
 	Task = &progress
 	// 如果产生了 pannic
 	defer func() {
 		if err := recover(); err != nil {
-			progress.Status = 2
 			progress.Stop = true
 			p <- progress
 		}
@@ -105,7 +104,6 @@ func (d *Downloader) Start(concurrency int, p chan Progress) error {
 		// 如果取消下载
 		if Task.Stop {
 			progress.Stop = true
-			progress.Status = 0
 			p <- progress
 			// 删除临时文件
 			err := os.RemoveAll(tsFolderName)
@@ -116,7 +114,7 @@ func (d *Downloader) Start(concurrency int, p chan Progress) error {
 			close(limitChan)
 			return nil
 		}
-
+		// 如果结束了就跳出循环
 		tsIdx, end, err := d.next()
 		if err != nil {
 			if end {
@@ -136,7 +134,6 @@ func (d *Downloader) Start(concurrency int, p chan Progress) error {
 			}
 			progress.Finish = d.finish
 			progress.Total = d.segLen
-			progress.Status = 1
 			p <- progress
 			<-limitChan
 		}(tsIdx)
@@ -144,16 +141,11 @@ func (d *Downloader) Start(concurrency int, p chan Progress) error {
 	}
 	wg.Wait()
 	// 下载结束通知
-	progress.Status = 0
-	p <- progress
-
 	close(limitChan)
 
-	if err := d.merge(); err != nil {
+	if err := d.merge(name); err != nil {
 		return err
 	}
-
-	progress.Status = 0
 	p <- progress
 	close(p)
 	return nil
@@ -174,7 +166,7 @@ func (d *Downloader) download(segIndex int) error {
 	if err != nil {
 		return fmt.Errorf("create file: %s, %s", tsFilename, err.Error())
 	}
-	bytes, err := ioutil.ReadAll(b)
+	bytes, err := io.ReadAll(b)
 	if err != nil {
 		return fmt.Errorf("read bytes: %s, %s", tsUrl, err.Error())
 	}
@@ -244,7 +236,7 @@ func (d *Downloader) back(segIndex int) error {
 	return nil
 }
 
-func (d *Downloader) merge() error {
+func (d *Downloader) merge(name string) error {
 	// In fact, the number of downloaded segments should be equal to number of m3u8 segments
 	missingCount := 0
 	for idx := 0; idx < d.segLen; idx++ {
@@ -258,8 +250,16 @@ func (d *Downloader) merge() error {
 		fmt.Printf("[warning] %d files missing\n", missingCount)
 	}
 
+	name = strings.TrimSpace(name)
+	if len(name) > 100 {
+		name = name[:100]
+	}
+	// name 是否是以 .MP4 结尾的
+	if !strings.HasSuffix(name, ".mp4") {
+		name = name + ".mp4"
+	}
 	// Create a TS file for merging, all segment files will be written to this file.
-	mFilePath := filepath.Join(d.folder, mergeTSFilename)
+	mFilePath := filepath.Join(d.folder, name) // mergeTSFilename
 	mFile, err := os.Create(mFilePath)
 	if err != nil {
 		return fmt.Errorf("create main TS file failed：%s", err.Error())
@@ -271,7 +271,7 @@ func (d *Downloader) merge() error {
 	mergedCount := 0
 	for segIndex := 0; segIndex < d.segLen; segIndex++ {
 		tsFilename := tsFilename(segIndex)
-		bytes, err := ioutil.ReadFile(filepath.Join(d.tsFolder, tsFilename))
+		bytes, err := os.ReadFile(filepath.Join(d.tsFolder, tsFilename))
 		_, err = writer.Write(bytes)
 		if err != nil {
 			continue
@@ -287,9 +287,7 @@ func (d *Downloader) merge() error {
 	if mergedCount != d.segLen {
 		fmt.Printf("[warning] \n%d files merge failed", d.segLen-mergedCount)
 	}
-
 	fmt.Printf("\n[output] %s\n", mFilePath)
-
 	return nil
 }
 

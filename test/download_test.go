@@ -7,8 +7,8 @@ import (
 )
 
 func TestDownload(t *testing.T) {
-	name := "斗罗大陆"
-	m3u8 := "https://hn.bfvvs.com/play/penWV2Ea/index.m3u8"
+	name := "1"
+	m3u8 := "https://play.gayzyv.com/play/NbW6Jvva/index.m3u8"
 	msgs, err := facades.Spider().Download().Start(name, m3u8)
 	if err != nil {
 		t.Log(err)
@@ -17,13 +17,11 @@ func TestDownload(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for p := range msgs {
-			if p.Stop {
-				wg.Done()
-			}
 			t.Logf("总：%d,进度:%d", p.Total, p.Finish)
 		}
 	}()
 	wg.Wait()
-	t.Log("over")
+	t.Log("下载成功")
 }

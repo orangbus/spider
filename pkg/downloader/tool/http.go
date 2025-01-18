@@ -10,7 +10,7 @@ import (
 
 func Get(url string) (io.ReadCloser, error) {
 	c := http.Client{
-		Timeout: time.Duration(60) * time.Second,
+		Timeout: time.Duration(120) * time.Second,
 		// 忽略 https
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
