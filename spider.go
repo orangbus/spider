@@ -6,11 +6,13 @@ import (
 	"github.com/orangbus/spider/pkg/movie_spider"
 	"github.com/spf13/cast"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 )
 
 type Spider struct {
+	debug   bool
 	baseUrl string
 	page    int
 	limit   int
@@ -42,6 +44,10 @@ func (s *Spider) SetType(t int) *Spider {
 	s.tp = t
 	return s
 }
+func (s *Spider) Debug() *Spider {
+	s.debug = true
+	return s
+}
 
 func (s *Spider) get() (movie_spider.MovieResponse, error) {
 	param := url.Values{}
@@ -54,10 +60,20 @@ func (s *Spider) get() (movie_spider.MovieResponse, error) {
 	if s.hour > 0 {
 		param.Set("h", cast.ToString(s.hour))
 	}
+	if s.tp > 0 {
+		param.Set("t", cast.ToString(s.tp))
+	}
+	if s.ids != "" {
+		param.Set("ids", s.ids)
+	}
 	if s.keyword != "" {
 		param.Set("wd", s.keyword)
 	}
-	response, err := http.Get(fmt.Sprintf("%s?%s", s.baseUrl, param.Encode()))
+	api_url := fmt.Sprintf("%s?%s", s.baseUrl, param.Encode())
+	if s.debug {
+		log.Printf("请求地址:%s", api_url)
+	}
+	response, err := http.Get(api_url)
 	if err != nil {
 		return data, err
 	}
@@ -104,6 +120,7 @@ func (s *Spider) Search(keyword string, page int, limit ...int) (movie_spider.Mo
 
 func (s *Spider) Detail(ids string) (movie_spider.MovieResponse, error) {
 	s.ids = ids
+	s.ac = "videolist"
 	return s.get()
 }
 

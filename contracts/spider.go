@@ -6,6 +6,7 @@ import (
 )
 
 type Spider interface {
+	Debug() *spider.Spider
 	BaseUrl(base_url string) *spider.Spider
 	SetHour(hour int) *spider.Spider
 	SetType(type_id int) *spider.Spider
