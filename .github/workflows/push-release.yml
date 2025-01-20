@@ -22,3 +22,5 @@ jobs:
           draft: false                     # 是否为草稿
           prerelease: false                # 是否为预发布版本
           body_path: ./release-notes.md    # 当前项目根目录的 Markdown 文件路径,下面方式二选一
+      - name: update package
+        run: go list -m -versions github.com/orangbus/spider@${{github.ref_name}}
