@@ -1,0 +1,24 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配以 'v' 开头的标签，例如 v1.0.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN 默认的账号
+          tag_name: ${{ github.ref_name }}  # 使用推送的 tag 名称
+          name: ${{ github.ref_name }}     # Release 名称
+          draft: false                     # 是否为草稿
+          prerelease: false                # 是否为预发布版本
+          body_path: ./release-notes.md    # 当前项目根目录的 Markdown 文件路径,下面方式二选一
