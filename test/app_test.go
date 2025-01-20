@@ -58,3 +58,24 @@ func TestDetail(t *testing.T) {
 	t.Log(len(res.List))
 	log.Printf("%v", res.List)
 }
+
+func TestLivePintai(t *testing.T) {
+	list, err := facades.Spider().Live().GetPinTai()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	for _, v := range list {
+		t.Log(v)
+	}
+}
+func TestLiveZhubo(t *testing.T) {
+	list, err := facades.Spider().Live().GetZhubo("jsonweishizhibo.txt")
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	for _, v := range list {
+		t.Log(v)
+	}
+}

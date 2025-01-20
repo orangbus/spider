@@ -22,4 +22,7 @@ type Spider interface {
 
 	// 下载
 	Download() *spider.Download
+
+	// 直播
+	Live() *spider.Live
 }

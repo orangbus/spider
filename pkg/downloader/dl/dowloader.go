@@ -127,7 +127,7 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 			defer wg.Done()
 			if err := d.download(idx); err != nil {
 				// Back into the queue, retry request
-				fmt.Printf("[failed] %s\n", err.Error())
+				//fmt.Printf("[failed] %s\n", err.Error())
 				if err := d.back(idx); err != nil {
 					fmt.Printf(err.Error())
 				}
