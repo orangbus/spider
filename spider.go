@@ -2,6 +2,7 @@ package spider
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/orangbus/spider/pkg/movie_spider"
 	"github.com/spf13/cast"
@@ -31,7 +32,10 @@ func (s *Spider) SetAcVideoList() *Spider {
 	return s
 }
 
-func (s *Spider) BaseUrl(base_url string) *Spider {
+func (s *Spider) BaseUrl(base_url string, proxy_url ...string) *Spider {
+	if len(proxy_url) > 0 {
+		base_url = fmt.Sprintf("%s%s", proxy_url, base_url)
+	}
 	s.baseUrl = base_url
 	return s
 }
@@ -118,10 +122,17 @@ func (s *Spider) Search(keyword string, page int, limit ...int) (movie_spider.Mo
 	return s.get()
 }
 
-func (s *Spider) Detail(ids string) (movie_spider.MovieResponse, error) {
+func (s *Spider) Detail(ids string) (movie_spider.MovieItem, error) {
 	s.ids = ids
 	s.ac = "videolist"
-	return s.get()
+	response, err := s.get()
+	if err != nil {
+		return movie_spider.MovieItem{}, err
+	}
+	if len(response.List) == 0 {
+		return movie_spider.MovieItem{}, errors.New("影片不存在")
+	}
+	return response.List[0], nil
 }
 
 func (s *Spider) Ping() bool {

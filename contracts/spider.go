@@ -7,14 +7,14 @@ import (
 
 type Spider interface {
 	Debug() *spider.Spider
-	BaseUrl(base_url string) *spider.Spider
+	BaseUrl(base_url string, proxy_url ...string) *spider.Spider
 	SetHour(hour int) *spider.Spider
 	SetType(type_id int) *spider.Spider
 
 	GetCateList() ([]movie_spider.ClassList, error)
 	GetList(page int, limit ...int) (movie_spider.MovieResponse, error)
 	Search(keyword string, page int, limit ...int) (movie_spider.MovieResponse, error)
-	Detail(ids string) (movie_spider.MovieResponse, error)
+	Detail(ids string) (movie_spider.MovieItem, error)
 	Ping() bool
 
 	// 解析

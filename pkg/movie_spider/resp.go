@@ -1,6 +1,6 @@
 package movie_spider
 
-type MovieList struct {
+type MovieItem struct {
 	VodID            int         `json:"vod_id"`
 	TypeID           int         `json:"type_id"`
 	TypeID1          int         `json:"type_id_1"`
@@ -93,9 +93,9 @@ type ClassList struct {
 }
 
 type MovieResponse struct {
-	Page      string `json:"page"`
-	Pagecount int    `json:"pagecount"`
-	Total     int64  `json:"total"`
-	List      []MovieList
+	Page      any   `json:"page"`
+	PageCount int   `json:"pagecount"`
+	Total     int64 `json:"total"`
+	List      []MovieItem
 	Class     []ClassList
 }
