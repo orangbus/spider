@@ -55,8 +55,7 @@ func TestDetail(t *testing.T) {
 		t.Logf("请求错误：%s", err.Error())
 		return
 	}
-	t.Log(len(res.List))
-	log.Printf("%v", res.List)
+	log.Printf("%v", res)
 }
 
 func TestLivePintai(t *testing.T) {
