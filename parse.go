@@ -57,9 +57,14 @@ func parseUrl(vodPlayURL string) []MovieUrlItem {
 		return list
 	}
 	// 只有单个地址的情况
-	item := strings.Split(vodPlayURL, "$")
-	if len(item) >= 2 {
-		list = append(list, MovieUrlItem{Name: item[0], Url: item[1]})
+	if strings.Contains(vodPlayURL, "$") {
+		item := strings.Split(vodPlayURL, "$")
+		if len(item) >= 2 {
+			list = append(list, MovieUrlItem{Name: item[0], Url: item[1]})
+		}
+		return list
 	}
+	// 如果直接就是播放地址
+	list = append(list, MovieUrlItem{Name: "1", Url: vodPlayURL})
 	return list
 }
