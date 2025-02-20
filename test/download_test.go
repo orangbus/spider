@@ -27,11 +27,21 @@ func TestDownload(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	name := "demo.txt"
-	api_url := "https://www.msnii.com/api/json.php?ac=videolist&h=24"
-	path, err := facades.Spider().Download().GenerateFile(name, api_url)
-	if err != nil {
-		t.Log(err)
+	type item struct {
+		Name string
+		Url  string
 	}
-	t.Logf("保存位置:%s", path)
+	var list = []item{}
+	list = append(list, item{
+		Name: "demo.txt",
+		Url:  "https://www.msnii.com/api/json.php?ac=videolist&h=24",
+	})
+	for _, v := range list {
+		path, err := facades.Spider().Download().GenerateFile(v.Name, v.Url)
+		if err != nil {
+			t.Log(err)
+			return
+		}
+		t.Logf("保存位置:%s", path)
+	}
 }

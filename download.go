@@ -2,6 +2,7 @@ package spider
 
 import (
 	"fmt"
+	"github.com/goravel/framework/errors"
 	"github.com/goravel/framework/facades"
 	"github.com/spf13/cast"
 	"sync"
@@ -62,7 +63,7 @@ func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
 	}
 
 	var wg sync.WaitGroup
-	ch := make(chan string, 10)
+	ch := make(chan string, 2)
 	if pageCount > 1 {
 		for i := 1; i < pageCount; i++ {
 			wg.Add(1)
@@ -73,20 +74,24 @@ func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
 				content2, _, err2 := getUrlData(q)
 				if err2 != nil {
 					ch <- ""
+				} else {
+					ch <- content2
 				}
-				ch <- content2
 			}(i)
 		}
 	}
 
 	// 接受channel消息
 	go func() {
-		for i := 1; i < pageCount; i++ {
-			data := <-ch
-			content += data
-		}
+		wg.Wait() // 确保所有goroutine完成后再关闭通道
+		close(ch)
 	}()
-	wg.Wait()
+
+	for i := 1; i <= pageCount; i++ {
+		data := <-ch
+		content += data
+	}
+
 	// 创建文件
 	if err := facades.Storage().Put(file_path, content); err != nil {
 		return "", err
@@ -110,7 +115,7 @@ func getUrlData(api_url string) (string, int, error) {
 	var spider = NewSpider()
 	movieResponse, err := spider.Get(api_url)
 	if err != nil {
-		return "", 0, err
+		return "", 0, errors.New(fmt.Sprintf("接口请求错误：%s", err.Error()))
 	}
 	for _, item := range movieResponse.List {
 		urlItems := spider.Parse().Url(item.VodPlayNote, item.VodPlayFrom, item.VodPlayURL)

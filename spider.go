@@ -103,12 +103,10 @@ func (s *Spider) Get(api_url string) (movie_spider.MovieResponse, error) {
 		return data, err
 	}
 	defer response.Body.Close()
-
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
 		return data, err
 	}
-
 	if err := json.Unmarshal(content, &data); err != nil {
 		return data, err
 	}

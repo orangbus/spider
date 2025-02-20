@@ -50,7 +50,7 @@ func TestSearch(t *testing.T) {
 }
 
 func TestDetail(t *testing.T) {
-	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Debug().Detail("1")
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Debug().Detail("1456")
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return
