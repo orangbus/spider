@@ -93,6 +93,27 @@ func (s *Spider) get() (movie_spider.MovieResponse, error) {
 	}
 	return data, nil
 }
+func (s *Spider) Get(api_url string) (movie_spider.MovieResponse, error) {
+	var data movie_spider.MovieResponse
+	if s.debug {
+		log.Printf("请求地址:%s", api_url)
+	}
+	response, err := http.Get(api_url)
+	if err != nil {
+		return data, err
+	}
+	defer response.Body.Close()
+
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		return data, err
+	}
+
+	if err := json.Unmarshal(content, &data); err != nil {
+		return data, err
+	}
+	return data, nil
+}
 
 func (s *Spider) GetCateList() ([]movie_spider.ClassList, error) {
 	resp, err := s.get()

@@ -25,3 +25,13 @@ func TestDownload(t *testing.T) {
 	wg.Wait()
 	t.Log("下载成功")
 }
+
+func TestGenerate(t *testing.T) {
+	name := "demo.txt"
+	api_url := "https://www.msnii.com/api/json.php?ac=videolist&h=24"
+	path, err := facades.Spider().Download().GenerateFile(name, api_url)
+	if err != nil {
+		t.Log(err)
+	}
+	t.Logf("保存位置:%s", path)
+}

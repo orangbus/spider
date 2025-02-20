@@ -4,6 +4,7 @@ import (
 	"github.com/goravel/framework/console"
 	"github.com/goravel/framework/contracts/foundation"
 	"github.com/goravel/framework/facades"
+	"github.com/goravel/framework/filesystem"
 	"github.com/goravel/framework/support/carbon"
 
 	"github.com/orangbus/spider"
@@ -71,6 +72,7 @@ func init() {
 		// request to your application. Feel free to add your own services to
 		// this array to grant expanded functionality to your applications.
 		"providers": []foundation.ServiceProvider{
+			&filesystem.ServiceProvider{},
 			&console.ServiceProvider{},
 			&spider.ServiceProvider{},
 		},

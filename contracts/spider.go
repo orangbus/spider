@@ -13,16 +13,11 @@ type Spider interface {
 
 	GetCateList() ([]movie_spider.ClassList, error)
 	GetList(page int, limit ...int) (movie_spider.MovieResponse, error)
+	Get(api_url string) (movie_spider.MovieResponse, error)
 	Search(keyword string, page int, limit ...int) (movie_spider.MovieResponse, error)
 	Detail(ids string) (movie_spider.MovieItem, error)
 	Ping() bool
-
-	// 解析
-	Parse() *spider.Parse
-
-	// 下载
-	Download() *spider.Download
-
-	// 直播
-	Live() *spider.Live
+	Parse() *spider.Parse       // 解析
+	Download() *spider.Download // 下载
+	Live() *spider.Live         // 直播
 }

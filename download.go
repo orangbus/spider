@@ -1,9 +1,15 @@
 package spider
 
 import (
+	"fmt"
 	"github.com/goravel/framework/facades"
+	"github.com/spf13/cast"
+	"sync"
+
+	//facades2 "github.com/orangbus/spider/facades"
 	"github.com/orangbus/spider/pkg/downloader/dl"
 	"log"
+	"net/url"
 	"path/filepath"
 )
 
@@ -36,4 +42,85 @@ func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
 		}
 	}()
 	return ch, err
+}
+func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
+	file_path := facades.Storage().Path(fileName)
+	if facades.Storage().Exists(file_path) {
+		if err := facades.Storage().Delete(file_path); err != nil {
+			return "", err
+		}
+	}
+
+	reqUrl, err := nextPageUrl(api_url, 1)
+	if err != nil {
+		return "", err
+	}
+
+	content, pageCount, err := getUrlData(reqUrl)
+	if err != nil {
+		return "", err
+	}
+
+	var wg sync.WaitGroup
+	ch := make(chan string, 10)
+	if pageCount > 1 {
+		for i := 1; i < pageCount; i++ {
+			wg.Add(1)
+			go func(page int) {
+				defer wg.Done()
+				q, _ := nextPageUrl(api_url, i+1)
+
+				content2, _, err2 := getUrlData(q)
+				if err2 != nil {
+					ch <- ""
+				}
+				ch <- content2
+			}(i)
+		}
+	}
+
+	// 接受channel消息
+	go func() {
+		for i := 1; i < pageCount; i++ {
+			data := <-ch
+			content += data
+		}
+	}()
+	wg.Wait()
+	// 创建文件
+	if err := facades.Storage().Put(file_path, content); err != nil {
+		return "", err
+	}
+	return file_path, nil
+}
+
+func nextPageUrl(api_url string, page int) (string, error) {
+	u, err := url.Parse(api_url)
+	if err != nil {
+		return "", err
+	}
+	param := u.Query()
+	param.Set("pg", cast.ToString(page))
+	api_url = fmt.Sprintf("%s://%s%s?%s", u.Scheme, u.Host, u.Path, param.Encode())
+	return api_url, err
+}
+
+func getUrlData(api_url string) (string, int, error) {
+	content := ""
+	var spider = NewSpider()
+	movieResponse, err := spider.Get(api_url)
+	if err != nil {
+		return "", 0, err
+	}
+	for _, item := range movieResponse.List {
+		urlItems := spider.Parse().Url(item.VodPlayNote, item.VodPlayFrom, item.VodPlayURL)
+		total := len(urlItems)
+		for _, urlItem := range urlItems {
+			content += fmt.Sprintf("%s %s.mp4\n", urlItem.Url, item.VodName)
+			if total > 1 {
+				content += fmt.Sprintf("%s %s-%s.mp4\n", urlItem.Url, item.VodName, urlItem.Name)
+			}
+		}
+	}
+	return content, movieResponse.PageCount, err
 }
