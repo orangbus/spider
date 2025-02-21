@@ -33,9 +33,10 @@ func TestGenerate(t *testing.T) {
 	}
 	var list = []item{}
 	list = append(list, item{
-		Name: "demo.txt",
-		Url:  "https://www.msnii.com/api/json.php?ac=videolist&h=24",
+		Name: "gayapi_21.txt",
+		Url:  "https://gayapi.com/api.php/provide/vod/at/json?ac=videolist&t=21",
 	})
+
 	for _, v := range list {
 		path, err := facades.Spider().Download().GenerateFile(v.Name, v.Url)
 		if err != nil {

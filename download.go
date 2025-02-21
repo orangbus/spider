@@ -93,7 +93,7 @@ func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
 	}
 
 	// 创建文件
-	if err := facades.Storage().Put(file_path, content); err != nil {
+	if err := facades.Storage().Put(fileName, content); err != nil {
 		return "", err
 	}
 	return file_path, nil
@@ -121,6 +121,9 @@ func getUrlData(api_url string) (string, int, error) {
 		urlItems := spider.Parse().Url(item.VodPlayNote, item.VodPlayFrom, item.VodPlayURL)
 		total := len(urlItems)
 		for _, urlItem := range urlItems {
+			if urlItem.Url == "" {
+				continue
+			}
 			content += fmt.Sprintf("%s %s.mp4\n", urlItem.Url, item.VodName)
 			if total > 1 {
 				content += fmt.Sprintf("%s %s-%s.mp4\n", urlItem.Url, item.VodName, urlItem.Name)
