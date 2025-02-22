@@ -163,6 +163,7 @@ func (s *Spider) Parse() *Parse {
 }
 
 func (s *Spider) Download() *Download {
+
 	return NewDownload()
 }
 func (s *Spider) Live() *Live {

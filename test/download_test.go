@@ -38,7 +38,7 @@ func TestGenerate(t *testing.T) {
 	})
 
 	for _, v := range list {
-		path, err := facades.Spider().Download().GenerateFile(v.Name, v.Url)
+		path, err := facades.Spider().Download().SetPrefixUrl("https://spider.orangbus.cn?url=").GenerateFile(v.Name, v.Url)
 		if err != nil {
 			t.Log(err)
 			return

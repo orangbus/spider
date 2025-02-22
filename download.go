@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"github.com/goravel/framework/errors"
 	"github.com/goravel/framework/facades"
-	"github.com/spf13/cast"
-	"sync"
-
-	//facades2 "github.com/orangbus/spider/facades"
 	"github.com/orangbus/spider/pkg/downloader/dl"
+	"github.com/spf13/cast"
 	"log"
 	"net/url"
 	"path/filepath"
+	"sync"
 )
 
 type Download struct {
-	thread    int
-	save_path string
+	prefix_url string
+	proxy_url  string
+	thread     int
+	save_path  string
 }
 
 func NewDownload() *Download {
@@ -24,6 +24,15 @@ func NewDownload() *Download {
 		thread:    facades.Config().GetInt("spider.thread", 30),
 		save_path: facades.Config().GetString("spider.path", "./download"),
 	}
+}
+
+//	func (d *Download) SetProxyUrl(proxy_url string) *Download {
+//		d.proxy_url = proxy_url
+//		return d
+//	}
+func (d *Download) SetPrefixUrl(prefix_url string) *Download {
+	d.prefix_url = prefix_url
+	return d
 }
 
 func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
@@ -57,38 +66,35 @@ func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
 		return "", err
 	}
 
-	content, pageCount, err := getUrlData(reqUrl)
+	content, pageCount, err := getUrlData(fmt.Sprintf("%s%s", d.prefix_url, reqUrl))
 	if err != nil {
 		return "", err
 	}
 
-	var wg sync.WaitGroup
 	ch := make(chan string, 2)
-	if pageCount > 1 {
-		for i := 1; i < pageCount; i++ {
-			wg.Add(1)
-			go func(page int) {
-				defer wg.Done()
-				q, _ := nextPageUrl(api_url, i+1)
-
-				content2, _, err2 := getUrlData(q)
-				if err2 != nil {
-					ch <- ""
-				} else {
-					ch <- content2
-				}
-			}(i)
-		}
-	}
-
-	// 接受channel消息
 	go func() {
-		wg.Wait() // 确保所有goroutine完成后再关闭通道
+		if pageCount > 1 {
+			var wg sync.WaitGroup
+			for i := 1; i < pageCount; i++ {
+				wg.Add(1)
+				go func(page int) {
+					defer wg.Done()
+					q, _ := nextPageUrl(api_url, i+1)
+
+					content2, _, err2 := getUrlData(fmt.Sprintf("%s%s", d.prefix_url, q))
+					if err2 != nil {
+						ch <- ""
+					} else {
+						ch <- content2
+					}
+				}(i)
+			}
+			wg.Wait() // 确保所有goroutine完成后再关闭通道
+		}
 		close(ch)
 	}()
 
-	for i := 1; i <= pageCount; i++ {
-		data := <-ch
+	for data := range ch {
 		content += data
 	}
 
@@ -111,6 +117,7 @@ func nextPageUrl(api_url string, page int) (string, error) {
 }
 
 func getUrlData(api_url string) (string, int, error) {
+	log.Printf("请求地址:%s", api_url)
 	content := ""
 	var spider = NewSpider()
 	movieResponse, err := spider.Get(api_url)
