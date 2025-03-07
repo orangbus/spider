@@ -33,7 +33,7 @@ func (s *Spider) SetAcVideoList() *Spider {
 }
 
 func (s *Spider) BaseUrl(base_url string, proxy_url ...string) *Spider {
-	if len(proxy_url) > 0 {
+	if len(proxy_url) > 0 && proxy_url[0] != "" {
 		base_url = fmt.Sprintf("%s%s", proxy_url, base_url)
 	}
 	s.baseUrl = base_url
@@ -46,6 +46,10 @@ func (s *Spider) SetHour(hour int) *Spider {
 }
 func (s *Spider) SetType(t int) *Spider {
 	s.tp = t
+	return s
+}
+func (s *Spider) SetKeyword(keyword string) *Spider {
+	s.keyword = keyword
 	return s
 }
 func (s *Spider) Debug() *Spider {
@@ -132,8 +136,7 @@ func (s *Spider) GetList(page int, limit ...int) (movie_spider.MovieResponse, er
 	return s.get()
 }
 
-func (s *Spider) Search(keyword string, page int, limit ...int) (movie_spider.MovieResponse, error) {
-	s.keyword = keyword
+func (s *Spider) Search(page int, limit ...int) (movie_spider.MovieResponse, error) {
 	s.page = page
 	if len(limit) > 0 {
 		s.limit = limit[0]
@@ -163,7 +166,6 @@ func (s *Spider) Parse() *Parse {
 }
 
 func (s *Spider) Download() *Download {
-
 	return NewDownload()
 }
 func (s *Spider) Live() *Live {

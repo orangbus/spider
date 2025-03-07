@@ -39,7 +39,7 @@ func TestGetList(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Search("斗罗", 1)
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").SetKeyword("斗罗").Search(1)
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return
