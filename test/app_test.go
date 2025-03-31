@@ -26,7 +26,7 @@ func TestGetCate(t *testing.T) {
 }
 
 func TestGetList(t *testing.T) {
-	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").SetType(1).Debug().GetList(1)
+	res, err := facades.Spider().BaseUrl("https://www.jingpinx.com/api.php/provide/vod", "https://spider.orangbus.cn?url=").Debug().GetList(1)
 	if err != nil {
 		t.Logf("请求错误：%s", err.Error())
 		return

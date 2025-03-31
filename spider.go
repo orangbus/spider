@@ -34,7 +34,7 @@ func (s *Spider) SetAcVideoList() *Spider {
 
 func (s *Spider) BaseUrl(base_url string, proxy_url ...string) *Spider {
 	if len(proxy_url) > 0 && proxy_url[0] != "" {
-		base_url = fmt.Sprintf("%s%s", proxy_url, base_url)
+		base_url = fmt.Sprintf("%s%s", proxy_url[0], base_url)
 	}
 	s.baseUrl = base_url
 	return s
@@ -86,6 +86,9 @@ func (s *Spider) get() (movie_spider.MovieResponse, error) {
 		return data, err
 	}
 	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return data, errors.New(fmt.Sprintf("请求错误，错误状态码:%d", response.StatusCode))
+	}
 
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
