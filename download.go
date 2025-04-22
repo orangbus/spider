@@ -53,12 +53,17 @@ func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
 	}()
 	return ch, err
 }
-func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
+func (d *Download) GenerateFile(fileName, api_url string, sensoryList ...[]string) (string, error) {
 	file_path := facades.Storage().Path(fileName)
 	if facades.Storage().Exists(file_path) {
 		if err := facades.Storage().Delete(file_path); err != nil {
 			return "", err
 		}
+	}
+
+	sensorys := []string{}
+	if len(sensoryList) > 0 {
+		sensorys = sensoryList[0]
 	}
 
 	reqUrl, err := nextPageUrl(api_url, 1)
@@ -81,7 +86,7 @@ func (d *Download) GenerateFile(fileName, api_url string) (string, error) {
 					defer wg.Done()
 					q, _ := nextPageUrl(api_url, i+1)
 
-					content2, _, err2 := getUrlData(fmt.Sprintf("%s%s", d.prefix_url, q))
+					content2, _, err2 := getUrlData(fmt.Sprintf("%s%s", d.prefix_url, q), sensorys)
 					if err2 != nil {
 						ch <- ""
 					} else {
@@ -116,8 +121,11 @@ func nextPageUrl(api_url string, page int) (string, error) {
 	return api_url, err
 }
 
-func getUrlData(api_url string) (string, int, error) {
-	log.Printf("请求地址:%s", api_url)
+func getUrlData(api_url string, sensoryList ...[]string) (string, int, error) {
+	sensorys := []string{}
+	if len(sensoryList) > 0 {
+		sensorys = sensoryList[0]
+	}
 	content := ""
 	var spider = NewSpider()
 	movieResponse, err := spider.Get(api_url)
@@ -131,11 +139,29 @@ func getUrlData(api_url string) (string, int, error) {
 			if urlItem.Url == "" {
 				continue
 			}
-			content += fmt.Sprintf("%s %s.mp4\n", urlItem.Url, item.VodName)
+			if checkHasSensory(sensorys, item.VodName) {
+				continue
+			}
 			if total > 1 {
 				content += fmt.Sprintf("%s %s-%s.mp4\n", urlItem.Url, item.VodName, urlItem.Name)
+			} else {
+				content += fmt.Sprintf("%s %s.mp4\n", urlItem.Url, item.VodName)
 			}
 		}
 	}
 	return content, movieResponse.PageCount, err
+}
+
+/*
+*
+是否包含敏感词
+*/
+func checkHasSensory(list []string, name string) bool {
+	for _, item := range list {
+		if item == name {
+			return true
+		}
+	}
+	return false
+
 }
