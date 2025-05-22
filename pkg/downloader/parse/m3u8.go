@@ -85,7 +85,7 @@ func parse(reader io.Reader) (*M3u8, error) {
 		extInf  bool
 		extByte bool
 	)
-
+	adv := false // 广告
 	for ; i < count; i++ {
 		line := strings.TrimSpace(lines[i])
 		if i == 0 {
@@ -94,6 +94,27 @@ func parse(reader io.Reader) (*M3u8, error) {
 			}
 			continue
 		}
+
+		// 跳过广告
+		if adv == true {
+			if line != "" && strings.HasPrefix(line, "#EXT-X-KEY") {
+				adv = false
+			} else {
+				continue
+			}
+		}
+		if line != "" && strings.HasPrefix(line, "#EXT-X-KEY") {
+			params := parseLineParameters(line)
+			if len(params) == 0 {
+				return nil, fmt.Errorf("invalid EXT-X-KEY: %s, line: %d", line, i+1)
+			}
+			method := CryptMethod(params["METHOD"])
+			if method == CryptMethodNONE {
+				adv = true
+				continue
+			}
+		}
+
 		switch {
 		case line == "":
 			continue
@@ -202,7 +223,11 @@ func parse(reader io.Reader) (*M3u8, error) {
 				return nil, fmt.Errorf("invalid EXT-X-KEY: %s, line: %d", line, i+1)
 			}
 			method := CryptMethod(params["METHOD"])
-			if method != "" && method != CryptMethodAES && method != CryptMethodNONE {
+			if method == CryptMethodNONE {
+				adv = true
+				continue
+			}
+			if method != "" && method != CryptMethodAES { // && method != CryptMethodNONE
 				return nil, fmt.Errorf("invalid EXT-X-KEY method: %s, line: %d", method, i+1)
 			}
 			keyIndex++
