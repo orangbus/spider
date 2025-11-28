@@ -1,9 +1,10 @@
 package test
 
 import (
-	"github.com/orangbus/spider/facades"
 	"sync"
 	"testing"
+
+	"github.com/orangbus/spider/facades"
 )
 
 func TestDownload(t *testing.T) {
@@ -34,7 +35,7 @@ func TestGenerate(t *testing.T) {
 	var list = []item{}
 	list = append(list, item{
 		Name: "gayapi_21.txt",
-		Url:  "https://gayapi.com/api.php/provide/vod/at/json?ac=videolist&t=21",
+		Url:  "https://91jpzyw.com/api.php/provide/vod?ac=videolist&t=80",
 	})
 
 	for _, v := range list {

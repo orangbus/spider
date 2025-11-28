@@ -2,14 +2,15 @@ package spider
 
 import (
 	"fmt"
-	"github.com/goravel/framework/errors"
-	"github.com/goravel/framework/facades"
-	"github.com/orangbus/spider/pkg/downloader/dl"
-	"github.com/spf13/cast"
 	"log"
 	"net/url"
 	"path/filepath"
 	"sync"
+
+	"github.com/goravel/framework/errors"
+	"github.com/goravel/framework/facades"
+	"github.com/orangbus/spider/pkg/downloader/dl"
+	"github.com/spf13/cast"
 )
 
 type Download struct {
@@ -60,6 +61,7 @@ func (d *Download) GenerateFile(fileName, api_url string, sensoryList ...[]strin
 			return "", err
 		}
 	}
+	log.Print("file_path:", file_path)
 
 	sensorys := []string{}
 	if len(sensoryList) > 0 {

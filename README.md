@@ -1,4 +1,4 @@
-# 视频采集
+# An Movie Spider For A Goravel Extend Package
 
 ## 快速入门
 
@@ -29,3 +29,12 @@ func (r *WebSpider) Ping(ctx http.Context) http.Response {
     return resp.Data(ctx, status)
 }
 ```
+## 主要功能
+- [x] 视频列表
+- [x] 视频详情
+- [x] 根据ids获取视频列表
+- [x] 生成视频下载文件
+- [x] 直播平台
+- [x] 直播列表
+
+完整测试请查看`test` 目录

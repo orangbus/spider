@@ -17,6 +17,7 @@ type Spider interface {
 	Get(api_url string) (movie_spider.MovieResponse, error)
 	Search(page int, limit ...int) (movie_spider.MovieResponse, error)
 	Detail(ids string) (movie_spider.MovieItem, error)
+	GetIdsList(ids string) ([]movie_spider.MovieItem, error)
 	Ping() bool                 // ping一下地址是否正常访问
 	Parse() *spider.Parse       // 解析
 	Download() *spider.Download // 下载

@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/orangbus/spider/pkg/movie_spider"
-	"github.com/spf13/cast"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/orangbus/spider/pkg/movie_spider"
+	"github.com/spf13/cast"
 )
 
 type Spider struct {
@@ -158,6 +159,16 @@ func (s *Spider) Detail(ids string) (movie_spider.MovieItem, error) {
 		return movie_spider.MovieItem{}, errors.New("影片不存在")
 	}
 	return response.List[0], nil
+}
+
+func (s *Spider) GetIdsList(ids string) ([]movie_spider.MovieItem, error) {
+	s.ids = ids
+	s.ac = "videolist"
+	response, err := s.get()
+	if err != nil {
+		return []movie_spider.MovieItem{}, err
+	}
+	return response.List, nil
 }
 
 func (s *Spider) Ping() bool {
