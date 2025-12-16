@@ -38,13 +38,13 @@ var Task *Progress
 
 // 下载进度
 type Progress struct {
-	Finish int32 `json:"finish"`
-	Total  int   `json:"total"`
-	Stop   bool  `json:"stop"`
+	Finish int32  `json:"finish"`
+	Total  int    `json:"total"`
+	Msg    string `json:"msg"` // 描述信息
 }
 
 // NewTask returns a Task instance
-func NewTask(output string, url string) (*Downloader, error) {
+func NewTask(output, url string) (*Downloader, error) {
 	result, err := parse.FromURL(url)
 	if err != nil {
 		return nil, err
@@ -85,13 +85,18 @@ func (d *Downloader) GetFinish() (total int32) {
 	return d.finish
 }
 
+// 下载单个视频
 func (d *Downloader) Start(name string, concurrency int, p chan Progress) error {
 	var progress Progress
 	Task = &progress
 	// 如果产生了 pannic
 	defer func() {
+		// 删除临时文件
+		err := os.RemoveAll(tsFolderName)
+		if err != nil {
+			log.Printf("临时文件删除失败:%s", err.Error())
+		}
 		if err := recover(); err != nil {
-			progress.Stop = true
 			p <- progress
 		}
 	}()
@@ -101,19 +106,6 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 	limitChan := make(chan struct{}, concurrency)
 
 	for {
-		// 如果取消下载
-		if Task.Stop {
-			progress.Stop = true
-			p <- progress
-			// 删除临时文件
-			err := os.RemoveAll(tsFolderName)
-			if err != nil {
-				log.Printf("临时文件删除失败:%s", err.Error())
-			}
-
-			close(limitChan)
-			return nil
-		}
 		// 如果结束了就跳出循环
 		tsIdx, end, err := d.next()
 		if err != nil {
@@ -131,6 +123,9 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 				if err := d.back(idx); err != nil {
 					fmt.Printf(err.Error())
 				}
+				progress.Msg = "下载失败，加入队列重试"
+			} else {
+				progress.Msg = "下载中..."
 			}
 			progress.Finish = d.finish
 			progress.Total = d.segLen
@@ -143,11 +138,12 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 	// 下载结束通知
 	close(limitChan)
 
+	progress.Msg = "下载完成，合并中..."
+	p <- progress
+
 	if err := d.merge(name); err != nil {
 		return err
 	}
-	p <- progress
-	close(p)
 	return nil
 }
 

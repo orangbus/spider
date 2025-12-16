@@ -18,6 +18,10 @@ type Download struct {
 	proxy_url  string
 	thread     int
 	save_path  string
+	mu         sync.Mutex
+	running    bool
+	stopCh     chan struct{}
+	doneCh     chan struct{}
 }
 
 func NewDownload() *Download {
@@ -27,16 +31,23 @@ func NewDownload() *Download {
 	}
 }
 
-//	func (d *Download) SetProxyUrl(proxy_url string) *Download {
-//		d.proxy_url = proxy_url
-//		return d
-//	}
-func (d *Download) SetPrefixUrl(prefix_url string) *Download {
-	d.prefix_url = prefix_url
-	return d
-}
+/*
+*
+  - 文件名称
+  - 下载地址
+  - 文件保存目录
 
-func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
+返回：下载的进度
+*/
+func (d *Download) Start(name, m3u8_url string, dirName ...string) (<-chan dl.Progress, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.running {
+		return nil, errors.New("任务正在运行中")
+	}
+	d.running = true
+	d.stopCh = make(chan struct{})
+	d.doneCh = make(chan struct{})
 	abs, err := filepath.Abs(d.save_path)
 	if err != nil {
 		return nil, err
@@ -47,13 +58,38 @@ func (d *Download) Start(name, m3u8_url string) (<-chan dl.Progress, error) {
 	}
 	ch := make(chan dl.Progress, 30)
 	go func() {
-		err = task.Start(name, d.thread, ch)
-		if err != nil {
-			log.Printf("下载错误：%s", err.Error())
+		for {
+			select {
+			case <-d.stopCh:
+				close(d.doneCh)
+				d.mu.Lock()
+				d.running = false
+				d.mu.Unlock()
+				close(ch) // 关闭下载的通道
+				return
+			default:
+				err = task.Start(name, d.thread, ch)
+				if err != nil {
+					log.Printf("下载错误：%s", err.Error())
+				}
+			}
 		}
 	}()
 	return ch, err
 }
+
+func (d *Download) Stop() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if !d.running {
+		return true
+	}
+	if d.running {
+		close(d.stopCh)
+	}
+	return true
+}
+
 func (d *Download) GenerateFile(fileName, api_url string, sensoryList ...[]string) (string, error) {
 	file_path := facades.Storage().Path(fileName)
 	if facades.Storage().Exists(file_path) {
@@ -110,6 +146,11 @@ func (d *Download) GenerateFile(fileName, api_url string, sensoryList ...[]strin
 		return "", err
 	}
 	return file_path, nil
+}
+
+func (d *Download) SetPrefixUrl(prefix_url string) *Download {
+	d.prefix_url = prefix_url
+	return d
 }
 
 func nextPageUrl(api_url string, page int) (string, error) {
