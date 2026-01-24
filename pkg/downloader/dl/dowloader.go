@@ -3,8 +3,6 @@ package dl
 import (
 	"bufio"
 	"fmt"
-	"github.com/orangbus/spider/pkg/downloader/parse"
-	"github.com/orangbus/spider/pkg/downloader/tool"
 	"io"
 	"log"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/orangbus/spider/pkg/downloader/parse"
+	"github.com/orangbus/spider/pkg/downloader/tool"
 )
 
 const (
@@ -38,9 +39,11 @@ var Task *Progress
 
 // 下载进度
 type Progress struct {
-	Finish int32 `json:"finish"`
-	Total  int   `json:"total"`
-	Stop   bool  `json:"stop"`
+	Finish  int32  `json:"finish"`
+	Total   int    `json:"total"`
+	Stop    bool   `json:"stop"`
+	Percent string `json:"percent"`
+	Msg     string `json:"msg"`
 }
 
 // NewTask returns a Task instance
@@ -151,7 +154,6 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 		return err
 	}
 	p <- progress
-	close(p)
 	return nil
 }
 
