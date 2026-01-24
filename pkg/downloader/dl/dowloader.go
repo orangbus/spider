@@ -3,6 +3,8 @@ package dl
 import (
 	"bufio"
 	"fmt"
+	"github.com/orangbus/spider/pkg/downloader/parse"
+	"github.com/orangbus/spider/pkg/downloader/tool"
 	"io"
 	"log"
 	"os"
@@ -11,9 +13,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-
-	"github.com/orangbus/spider/pkg/downloader/parse"
-	"github.com/orangbus/spider/pkg/downloader/tool"
 )
 
 const (
@@ -39,10 +38,9 @@ var Task *Progress
 
 // 下载进度
 type Progress struct {
-	Finish  int32  `json:"finish"`
-	Total   int    `json:"total"`
-	Stop    bool   `json:"stop"`
-	Percent string `json:"percent"`
+	Finish int32 `json:"finish"`
+	Total  int   `json:"total"`
+	Stop   bool  `json:"stop"`
 }
 
 // NewTask returns a Task instance
@@ -96,7 +94,6 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 			progress.Stop = true
 			p <- progress
 		}
-		close(p) // 关闭通道
 	}()
 
 	var wg sync.WaitGroup
@@ -147,10 +144,14 @@ func (d *Downloader) Start(name string, concurrency int, p chan Progress) error 
 	// 下载结束通知
 	close(limitChan)
 
+	progress.Msg = "下载完成，合并中..."
+	p <- progress
+
 	if err := d.merge(name); err != nil {
 		return err
 	}
 	p <- progress
+	close(p)
 	return nil
 }
 
@@ -290,7 +291,7 @@ func (d *Downloader) merge(name string) error {
 	if mergedCount != d.segLen {
 		fmt.Printf("[warning] \n%d files merge failed", d.segLen-mergedCount)
 	}
-	//fmt.Printf("\n[output] %s\n", mFilePath)
+	fmt.Printf("\n[output] %s\n", mFilePath)
 	return nil
 }
 

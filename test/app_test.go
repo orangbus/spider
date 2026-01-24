@@ -1,10 +1,11 @@
 package test
 
 import (
-	"github.com/orangbus/spider/bootstrap"
-	"github.com/orangbus/spider/facades"
 	"log"
 	"testing"
+
+	"github.com/orangbus/spider/bootstrap"
+	"github.com/orangbus/spider/facades"
 )
 
 func init() {
@@ -58,6 +59,19 @@ func TestDetail(t *testing.T) {
 	log.Printf("%v", res)
 }
 
+func TestGetIdsList(t *testing.T) {
+	res, err := facades.Spider().BaseUrl("https://www.msnii.com/api/json.php").Debug().GetIdsList("253197,253195,253193")
+	if err != nil {
+		t.Logf("请求错误：%s", err.Error())
+		return
+	}
+	log.Printf("%v", res)
+}
+
+/*
+*
+获取直播平台
+*/
 func TestLivePintai(t *testing.T) {
 	list, err := facades.Spider().Live().GetPinTai()
 	if err != nil {
@@ -68,6 +82,11 @@ func TestLivePintai(t *testing.T) {
 		t.Log(v)
 	}
 }
+
+/*
+*
+获取直播平台直播列表
+*/
 func TestLiveZhubo(t *testing.T) {
 	list, err := facades.Spider().Live().GetZhubo("jsonweishizhibo.txt")
 	if err != nil {
