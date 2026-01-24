@@ -150,6 +150,7 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 		if d.retryTotal >= 100 {
 			progress.ResultError = "下载失败"
 			d.retryTotal = 0
+			p <- progress
 			return
 		}
 

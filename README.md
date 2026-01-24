@@ -36,5 +36,6 @@ func (r *WebSpider) Ping(ctx http.Context) http.Response {
 - [x] 生成视频下载文件
 - [x] 直播平台
 - [x] 直播列表
+- [ ] 暂停下载
 
 完整测试请查看`test` 目录
