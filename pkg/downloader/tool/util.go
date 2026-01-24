@@ -40,3 +40,11 @@ func DrawProgressBar(prefix string, proportion float32, width int, suffix ...str
 		prefix, strings.Repeat("■", pos), width-pos, "", proportion*100, strings.Join(suffix, ""))
 	fmt.Print("\r" + s)
 }
+
+func CalculatePercent(part, total int) string {
+	if total == 0 || part == 0 {
+		return "0.00%"
+	}
+	percentage := float64(part) / float64(total) * 100
+	return fmt.Sprintf("%.2f%%", percentage)
+}
