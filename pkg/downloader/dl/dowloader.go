@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -32,18 +31,19 @@ type Downloader struct {
 	finish   int32
 	segLen   int
 
-	result *parse.Result
+	result     *parse.Result
+	retryTotal int // 重试次数
 }
 
 var Task *Progress
 
 // 下载进度
 type Progress struct {
-	Finish  int32  `json:"finish"`
-	Total   int    `json:"total"`
-	Stop    bool   `json:"stop"`
-	Percent string `json:"percent"`
-	Msg     string `json:"msg"`
+	Finish      int32  `json:"finish"`
+	Total       int    `json:"total"`
+	Percent     string `json:"percent"`
+	Msg         string `json:"msg"`
+	ResultError string `json:"result"` // 如果错误，则返回错误信息
 }
 
 // NewTask returns a Task instance
@@ -88,73 +88,80 @@ func (d *Downloader) GetFinish() (total int32) {
 	return d.finish
 }
 
-func (d *Downloader) Start(name string, concurrency int, p chan Progress) error {
-	var progress Progress
-	Task = &progress
-	// 如果产生了 pannic
-	defer func() {
-		if err := recover(); err != nil {
-			progress.Stop = true
-			p <- progress
-		}
-	}()
-
-	var wg sync.WaitGroup
-	// struct{} zero size
-	limitChan := make(chan struct{}, concurrency)
-
-	for {
-		// 如果取消下载
-		if Task.Stop {
-			progress.Stop = true
-			p <- progress
+func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
+	msgs := make(chan Progress, 100)
+	go func(p chan Progress, name string, concurrency int) {
+		var progress Progress
+		Task = &progress
+		defer func() {
 			// 删除临时文件
 			err := os.RemoveAll(tsFolderName)
 			if err != nil {
-				log.Printf("临时文件删除失败:%s", err.Error())
+				progress.Msg = fmt.Sprintf("临时文件删除失败:%s", err.Error())
+				p <- progress
 			}
 
-			close(limitChan)
-			return nil
-		}
-		// 如果结束了就跳出循环
-		tsIdx, end, err := d.next()
-		if err != nil {
-			if end {
-				break
+			if err := recover(); err != nil {
+				progress.ResultError = "下载异常或者超时取消"
+				p <- progress
 			}
-			continue
-		}
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-			if err := d.download(idx); err != nil {
-				// Back into the queue, retry request
-				//fmt.Printf("[failed] %s\n", err.Error())
-				if err := d.back(idx); err != nil {
-					fmt.Printf(err.Error())
+			close(p) // 通知外部通道已经关闭
+		}()
+
+		var wg sync.WaitGroup
+		// struct{} zero size
+		limitChan := make(chan struct{}, concurrency)
+		for {
+			tsIdx, end, err := d.next()
+			if err != nil {
+				if end {
+					break
 				}
+				continue
 			}
-			progress.Finish = d.finish
-			progress.Total = d.segLen
-			progress.Percent = tool.CalculatePercent(int(progress.Finish), progress.Total)
+
+			wg.Add(1)
+			go func(idx int) {
+				wg.Done()
+				if err := d.download(idx); err != nil {
+					// Back into the queue, retry request
+					//fmt.Printf("[failed] %s\n", err.Error())
+					// 防止重试次数过多
+					if d.retryTotal < 100 {
+						if err := d.back(idx); err != nil {
+							fmt.Printf(err.Error())
+						}
+					} else {
+						d.retryTotal++
+					}
+				}
+				progress.Finish = d.finish
+				progress.Total = d.segLen
+				progress.Percent = tool.CalculatePercent(int(progress.Finish), progress.Total)
+				p <- progress
+				<-limitChan
+			}(tsIdx)
+			limitChan <- struct{}{}
+		}
+		wg.Wait()
+		// 下载结束通知
+		close(limitChan)
+
+		if d.retryTotal >= 100 {
+			progress.ResultError = "下载失败"
+			d.retryTotal = 0
+			return
+		}
+
+		progress.Msg = "下载完成，合并中..."
+		p <- progress
+
+		if err := d.merge(name); err != nil {
+			progress.ResultError = err.Error()
 			p <- progress
-			<-limitChan
-		}(tsIdx)
-		limitChan <- struct{}{}
-	}
-	wg.Wait()
-	// 下载结束通知
-	close(limitChan)
-
-	progress.Msg = "下载完成，合并中..."
-	p <- progress
-
-	if err := d.merge(name); err != nil {
-		return err
-	}
-	p <- progress
-	return nil
+		}
+	}(msgs, name, concurrency)
+	return msgs
 }
 
 func (d *Downloader) download(segIndex int) error {
@@ -293,7 +300,7 @@ func (d *Downloader) merge(name string) error {
 	if mergedCount != d.segLen {
 		fmt.Printf("[warning] \n%d files merge failed", d.segLen-mergedCount)
 	}
-	fmt.Printf("\n[output] %s\n", mFilePath)
+	//fmt.Printf("\n[output] %s\n", mFilePath)
 	return nil
 }
 
