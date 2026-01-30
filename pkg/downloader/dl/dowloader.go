@@ -44,6 +44,7 @@ type Progress struct {
 	Percent     string `json:"percent"`
 	Msg         string `json:"msg"`
 	ResultError string `json:"result"` // 如果错误，则返回错误信息
+	Stop        bool   `json:"stop"`
 }
 
 // NewTask returns a Task instance
@@ -127,7 +128,7 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 					// Back into the queue, retry request
 					//fmt.Printf("[failed] %s\n", err.Error())
 					// 防止重试次数过多
-					if d.retryTotal < 100 {
+					if d.retryTotal < 10 {
 						if err := d.back(idx); err != nil {
 							fmt.Printf(err.Error())
 						}
@@ -147,7 +148,7 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 		// 下载结束通知
 		close(limitChan)
 
-		if d.retryTotal >= 100 {
+		if d.retryTotal >= 10 {
 			progress.ResultError = "下载失败"
 			d.retryTotal = 0
 			p <- progress
