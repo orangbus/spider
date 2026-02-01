@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"crypto/md5"
 	"fmt"
 	"net/url"
 	"os"
@@ -47,4 +48,8 @@ func CalculatePercent(part, total int) string {
 	}
 	percentage := float64(part) / float64(total) * 100
 	return fmt.Sprintf("%.2f%%", percentage)
+}
+
+func Md5(data string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
 }

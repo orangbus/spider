@@ -9,8 +9,9 @@ import (
 
 func TestDownload(t *testing.T) {
 	name := "1"
-	m3u8 := "https://play.gayzyv.com/play/NbW6Jvva/index.m3u8"
-	msgs, err := facades.Spider().Download().Start(name, m3u8)
+	m3u8 := "https://svip.ryiplay18.com/20260117/736_a84d0237/index.m3u8"
+	//customer_dir := "orangbus"
+	msgs, err := facades.Spider().Download().Start(name, m3u8, "动漫")
 	if err != nil {
 		t.Log(err)
 		return

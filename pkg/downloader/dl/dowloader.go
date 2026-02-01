@@ -32,7 +32,9 @@ type Downloader struct {
 	segLen   int
 
 	result     *parse.Result
-	retryTotal int // 重试次数
+	retryTotal int  // 重试次数
+	running    bool // 是否在下载中
+	stop       bool
 }
 
 var Task *Progress
@@ -44,7 +46,7 @@ type Progress struct {
 	Percent     string `json:"percent"`
 	Msg         string `json:"msg"`
 	ResultError string `json:"result"` // 如果错误，则返回错误信息
-	Stop        bool   `json:"stop"`
+	Stop        bool   `json:"stop"`   // 暂停下载不需要更新状态
 }
 
 // NewTask returns a Task instance
@@ -75,6 +77,8 @@ func NewTask(output string, url string) (*Downloader, error) {
 		folder:   folder,
 		tsFolder: tsFolder,
 		result:   result,
+		running:  true,
+		stop:     false,
 	}
 	d.segLen = len(result.M3u8.Segments)
 	d.queue = genSlice(d.segLen)
@@ -88,6 +92,9 @@ func (d *Downloader) GetTotal() (total int) {
 func (d *Downloader) GetFinish() (total int32) {
 	return d.finish
 }
+func (d *Downloader) StopDownload() {
+	d.stop = false
+}
 
 func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 	msgs := make(chan Progress, 100)
@@ -95,13 +102,6 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 		var progress Progress
 		Task = &progress
 		defer func() {
-			// 删除临时文件
-			err := os.RemoveAll(tsFolderName)
-			if err != nil {
-				progress.Msg = fmt.Sprintf("临时文件删除失败:%s", err.Error())
-				p <- progress
-			}
-
 			if err := recover(); err != nil {
 				progress.ResultError = "下载异常或者超时取消"
 				p <- progress
@@ -113,6 +113,13 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 		// struct{} zero size
 		limitChan := make(chan struct{}, concurrency)
 		for {
+			if !d.running {
+				break
+			}
+			if d.stop {
+				progress.Stop = true
+				break
+			}
 			tsIdx, end, err := d.next()
 			if err != nil {
 				if end {
@@ -128,7 +135,7 @@ func (d *Downloader) Start(name string, concurrency int) <-chan Progress {
 					// Back into the queue, retry request
 					//fmt.Printf("[failed] %s\n", err.Error())
 					// 防止重试次数过多
-					if d.retryTotal < 10 {
+					if d.retryTotal < 100 {
 						if err := d.back(idx); err != nil {
 							fmt.Printf(err.Error())
 						}
@@ -292,8 +299,8 @@ func (d *Downloader) merge(name string) error {
 			continue
 		}
 		mergedCount++
-		tool.DrawProgressBar("merge",
-			float32(mergedCount)/float32(d.segLen), progressWidth)
+		//tool.DrawProgressBar("merge",
+		//	float32(mergedCount)/float32(d.segLen), progressWidth)
 	}
 	_ = writer.Flush()
 	// Remove `ts` folder

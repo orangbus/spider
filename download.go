@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"path/filepath"
 	"sync"
 
 	"github.com/goravel/framework/errors"
 	"github.com/goravel/framework/facades"
+	"github.com/orangbus/spider/pkg/downloader/dl"
 	"github.com/spf13/cast"
 )
 
@@ -37,44 +39,21 @@ func NewDownload() *Download {
 
 返回：下载的进度
 */
-//func (d *Download) Start(name, m3u8_url string, dirName ...string) (<-chan dl.Progress, error) {
-//	//d.mu.Lock()
-//	//defer d.mu.Unlock()
-//	//if d.running {
-//	//	return nil, errors.New("任务正在运行中")
-//	//}
-//	//d.running = true
-//	//d.stopCh = make(chan struct{})
-//	//d.doneCh = make(chan struct{})
-//	//abs, err := filepath.Abs(d.save_path)
-//	//if err != nil {
-//	//	return nil, err
-//	//}
-//	//task, err := dl.NewTask(abs, m3u8_url)
-//	//if err != nil {
-//	//	return nil, err
-//	//}
-//	//ch := make(chan dl.Progress, 30)
-//	//go func() {
-//	//	for {
-//	//		select {
-//	//		case <-d.stopCh:
-//	//			close(d.doneCh)
-//	//			d.mu.Lock()
-//	//			d.running = false
-//	//			d.mu.Unlock()
-//	//			close(ch) // 关闭下载的通道
-//	//			return
-//	//		default:
-//	//			//err = task.Start(name, d.thread)
-//	//			//if err != nil {
-//	//			//	log.Printf("下载错误：%s", err.Error())
-//	//			//}
-//	//		}
-//	//	}
-//	//}()
-//	return ch, err
-//}
+func (d *Download) Start(name, m3u8_url string, dirName ...string) (<-chan dl.Progress, error) {
+	abs, err := filepath.Abs(d.save_path)
+	if err != nil {
+		return nil, err
+	}
+	if len(dirName) > 0 {
+		abs = filepath.Join(abs, dirName[0])
+	}
+	task, err := dl.NewTask(abs, m3u8_url)
+	if err != nil {
+		return nil, err
+	}
+	msgs := task.Start(name, d.thread)
+	return msgs, nil
+}
 
 func (d *Download) Stop() bool {
 	d.mu.Lock()
